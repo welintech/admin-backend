@@ -3,13 +3,24 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const passport = require('passport');
 const mongoose = require('mongoose');
+const cors = require('cors'); // Add CORS package
 
 // Routes
 const authRoutes = require('./routes/auth');
 
 // Initialize the app
 const app = express();
-
+app.use(cors({
+  origin: [
+    'http://localhost:5173', // Vite dev server
+    'http://localhost:3000', // React dev server
+    'https://welin-dashboard-backend-493mx.ondigitalocean.app', // Your production domain
+    // Add other allowed origins as needed
+  ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));
 // Middleware
 app.use(bodyParser.json());
 app.use(passport.initialize());
