@@ -8,6 +8,7 @@ const cors = require('cors'); // Add CORS package
 // Routes
 const authRoutes = require('./routes/auth');
 const memberRoutes = require('./routes/member');
+const userRoutes = require('./routes/user');
 
 // Initialize the app
 const app = express();
@@ -51,4 +52,5 @@ require('./config/passport')(passport);
 
 // Routes
 app.use('/api/auth', authRoutes);
-app.use('/api/partner/submit', memberRoutes);
+app.use('/api/members', memberRoutes);
+app.use('/api/users', userRoutes);
