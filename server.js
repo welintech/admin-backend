@@ -51,4 +51,4 @@ require('./config/passport')(passport);
 
 // Routes
 app.use('/api/auth', authRoutes);
-app.use('/api/members', memberRoutes);
+app.use('/api/partner/submit', memberRoutes);

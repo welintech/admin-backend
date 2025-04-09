@@ -3,7 +3,7 @@ const router = express.Router();
 const Member = require('../models/Member');
 
 // POST /api/members - Create a new member
-router.post('/partner/submit', async (req, res) => {
+router.post('/', async (req, res) => {
     try {
         const memberData = req.body;
         
