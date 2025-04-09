@@ -2,10 +2,10 @@ const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
 const Member = require('../models/Member');
-const passport = require('passport');
+const { checkAdminRole } = require('../middleware/auth');
 
-// GET /api/users - Get list of all users (admin only)
-router.get('/', passport.authenticate('jwt', { session: false }), async (req, res) => {
+// GET /api/users - Get list of all users (admin and superadmin only)
+router.get('/', checkAdminRole('admin'), async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
@@ -15,6 +15,11 @@ router.get('/', passport.authenticate('jwt', { session: false }), async (req, re
         const searchQuery = {};
         if (req.query.search) {
             searchQuery.username = { $regex: req.query.search, $options: 'i' };
+        }
+
+        // If admin, only show vendors
+        if (req.user.role === 'admin') {
+            searchQuery.role = 'vendor';
         }
 
         const users = await User.find(searchQuery)
@@ -44,20 +49,28 @@ router.get('/', passport.authenticate('jwt', { session: false }), async (req, re
     }
 });
 
-// GET /api/users/:userId/members - Get members for a specific user (admin only)
-router.get('/:userId/members', passport.authenticate('jwt', { session: false }), async (req, res) => {
+// GET /api/users/:userId/members - Get members for a specific user (admin and superadmin only)
+router.get('/:userId/members', checkAdminRole('admin'), async (req, res) => {
     try {
         const { userId } = req.params;
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
         const skip = (page - 1) * limit;
 
-        // Verify user exists
+        // Verify user exists and check permissions
         const user = await User.findById(userId);
         if (!user) {
             return res.status(404).json({
                 success: false,
                 message: 'User not found'
+            });
+        }
+
+        // If admin, can only access vendor members
+        if (req.user.role === 'admin' && user.role !== 'vendor') {
+            return res.status(403).json({
+                success: false,
+                message: 'Insufficient permissions to access this user\'s members'
             });
         }
 
