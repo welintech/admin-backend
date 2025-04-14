@@ -5,55 +5,131 @@ const User = require('../models/User');
 
 const router = express.Router();
 
-// Register route
+// Vendor registration
 router.post('/register', async (req, res) => {
   const { username, password } = req.body;
 
   try {
-    let user = await User.findOne({ username });
-    if (user) {
-      return res.status(400).json({ message: 'User already exists' });
+    let vendor = await User.findOne({ username });
+    if (vendor) {
+      return res.status(400).json({
+        success: false,
+        message: 'Vendor already exists'
+      });
     }
 
-    user = new User({ username, password });
-    await user.save();
-    res.status(201).json({ message: 'User created successfully' });
+    vendor = new User({
+      username,
+      password,
+      role: 'vendor'  // Always set role as vendor
+    });
+
+    await vendor.save();
+
+    res.status(201).json({
+      success: true,
+      message: 'Vendor registered successfully',
+      data: {
+        username: vendor.username,
+        role: vendor.role,
+        _id: vendor._id
+      }
+    });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Vendor registration error:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Error registering vendor',
+      error: err.message
+    });
   }
 });
 
-// Login route
+// Vendor login
 router.post('/login', async (req, res) => {
   const { username, password } = req.body;
 
   try {
-    let user = await User.findOne({ username });
-    if (!user) {
-      return res.status(400).json({ message: 'Invalid credentials' });
+    let vendor = await User.findOne({ username, role: 'vendor' });
+    if (!vendor) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid vendor credentials'
+      });
     }
 
-    const isMatch = await user.comparePassword(password);
+    const isMatch = await vendor.comparePassword(password);
     if (!isMatch) {
-      return res.status(400).json({ message: 'Invalid credentials' });
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid vendor credentials'
+      });
     }
 
     // Create JWT
-    const payload = { id: user._id };
-    const token = jwt.sign(payload, 'your_secret_key', { expiresIn: '1h' });
+    const payload = {
+      id: vendor._id,
+      role: vendor.role
+    };
+    
+    const token = jwt.sign(
+      payload,
+      process.env.JWT_SECRET || 'your_jwt_secret',
+      { expiresIn: '1h' }
+    );
 
-    res.json({ message: 'Logged in successfully', token: `Bearer ${token}` });
+    res.json({
+      success: true,
+      message: 'Vendor logged in successfully',
+      data: {
+        token: `Bearer ${token}`,
+        vendor: {
+          _id: vendor._id,
+          username: vendor.username,
+          role: vendor.role
+        }
+      }
+    });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Vendor login error:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Error during vendor login',
+      error: err.message
+    });
   }
 });
 
-// Protected route
-router.get('/dashboard', passport.authenticate('jwt', { session: false }), (req, res) => {
-  user_name = req.user.username;
-  res.json({ message: `Welcome to dashboard ${user_name}` });
+// Vendor dashboard
+router.get('/dashboard', passport.authenticate('jwt', { session: false }), async (req, res) => {
+  try {
+    // Ensure the authenticated user is a vendor
+    if (req.user.role !== 'vendor') {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Vendor only route.'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Welcome to vendor dashboard',
+      data: {
+        vendor: {
+          _id: req.user._id,
+          username: req.user.username,
+          role: req.user.role
+        }
+      }
+    });
+  } catch (err) {
+    console.error('Dashboard error:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Error accessing dashboard',
+      error: err.message
+    });
+  }
 });
 
 module.exports = router;

@@ -13,16 +13,19 @@ const UserSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['vendor', 'admin', 'superadmin'],
-    default: 'vendor'
+    default: 'vendor',
+    enum: ['vendor']
   },
   isActive: {
     type: Boolean,
     default: true
   },
   lastLogin: {
-    type: Date
+    type: Date,
+    default: Date.now
   }
+}, {
+  timestamps: true
 });
 
 // Hash password before saving

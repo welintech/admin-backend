@@ -6,7 +6,7 @@ const checkAdminRole = (requiredRole) => {
         try {
             // Get token from header
             const token = req.header('Authorization')?.replace('Bearer ', '');
-            
+        
             if (!token) {
                 return res.status(401).json({
                     success: false,
