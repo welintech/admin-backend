@@ -4,6 +4,7 @@ const bodyParser = require('body-parser');
 const passport = require('passport');
 const mongoose = require('mongoose');
 const cors = require('cors'); // Add CORS package
+const morgan = require('morgan');
 
 // Routes
 const authRoutes = require('./routes/auth');
@@ -12,6 +13,7 @@ const vendorRoutes = require('./routes/vendor');
 
 // Initialize the app
 const app = express();
+app.use(morgan('dev'));
 app.use(cors({
   origin: [
     'http://localhost:5173', // Vite dev server

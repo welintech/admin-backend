@@ -1,9 +1,9 @@
 const mongoose = require('mongoose');
 
 const memberSchema = new mongoose.Schema({
-    user: {
+    vendorId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
+        ref: 'Vendor',
         required: true
     },
     memberNumber: {

@@ -2,74 +2,106 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const passport = require('passport');
 const User = require('../models/User');
+const Vendor = require('../models/Vendor');
 
 const router = express.Router();
 
-// Vendor registration
+// User registration (admin or vendor)
 router.post('/register', async (req, res) => {
-  const { username, password } = req.body;
+  const { username, password, role, vendorData } = req.body;
 
   try {
-    let vendor = await User.findOne({ username });
-    if (vendor) {
+    // Check if user already exists
+    let user = await User.findOne({ username });
+    if (user) {
       return res.status(400).json({
         success: false,
-        message: 'Vendor already exists'
+        message: 'Username already exists'
       });
     }
 
-    vendor = new User({
+    // Create user
+    user = new User({
       username,
       password,
-      role: 'vendor'  // Always set role as vendor
+      role
     });
 
-    await vendor.save();
+    await user.save();
+
+    // If role is vendor, create vendor profile
+    let vendor = null;
+    if (role === 'vendor' && vendorData) {
+      vendor = new Vendor({
+        name: vendorData.name,
+        email: vendorData.email,
+        phone: vendorData.phone,
+        address: vendorData.address,
+        userId: user._id
+      });
+
+      await vendor.save();
+    }
 
     res.status(201).json({
       success: true,
-      message: 'Vendor registered successfully',
+      message: `${role} registered successfully`,
       data: {
-        username: vendor.username,
-        role: vendor.role,
-        _id: vendor._id
+        user: {
+          _id: user._id,
+          username: user.username,
+          role: user.role
+        },
+        vendor: vendor ? {
+          _id: vendor._id,
+          name: vendor.name,
+          email: vendor.email
+        } : null
       }
     });
   } catch (err) {
-    console.error('Vendor registration error:', err);
+    console.error('Registration error:', err);
     res.status(500).json({
       success: false,
-      message: 'Error registering vendor',
+      message: 'Error during registration',
       error: err.message
     });
   }
 });
 
-// Vendor login
+// User login (admin or vendor)
 router.post('/login', async (req, res) => {
   const { username, password } = req.body;
 
   try {
-    let vendor = await User.findOne({ username, role: 'vendor' });
-    if (!vendor) {
+    // Find user
+    let user = await User.findOne({ username });
+    if (!user) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid vendor credentials'
+        message: 'Invalid credentials'
       });
     }
 
-    const isMatch = await vendor.comparePassword(password);
+    // Check password
+    const isMatch = await user.comparePassword(password);
     if (!isMatch) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid vendor credentials'
+        message: 'Invalid credentials'
       });
+    }
+
+    // If user is vendor, get vendor profile
+    let vendor = null;
+    if (user.role === 'vendor') {
+      vendor = await Vendor.findOne({ userId: user._id });
     }
 
     // Create JWT
     const payload = {
-      id: vendor._id,
-      role: vendor.role
+      id: user._id,
+      role: user.role
     };
     
     const token = jwt.sign(
@@ -80,46 +112,56 @@ router.post('/login', async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Vendor logged in successfully',
+      message: 'Logged in successfully',
       data: {
         token: `Bearer ${token}`,
-        vendor: {
+        user: {
+          _id: user._id,
+          username: user.username,
+          role: user.role
+        },
+        vendor: vendor ? {
           _id: vendor._id,
-          username: vendor.username,
-          role: vendor.role
-        }
+          name: vendor.name,
+          email: vendor.email
+        } : null
       }
     });
   } catch (err) {
-    console.error('Vendor login error:', err);
+    console.error('Login error:', err);
     res.status(500).json({
       success: false,
-      message: 'Error during vendor login',
+      message: 'Error during login',
       error: err.message
     });
   }
 });
 
-// Vendor dashboard
+// Dashboard route
 router.get('/dashboard', passport.authenticate('jwt', { session: false }), async (req, res) => {
   try {
-    // Ensure the authenticated user is a vendor
-    if (req.user.role !== 'vendor') {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied. Vendor only route.'
-      });
+    const user = req.user;
+    
+    // Get vendor profile if user is a vendor
+    let vendor = null;
+    if (user.role === 'vendor') {
+      vendor = await Vendor.findOne({ userId: user._id });
     }
 
     res.json({
       success: true,
-      message: 'Welcome to vendor dashboard',
+      message: `Welcome to ${user.role} dashboard`,
       data: {
-        vendor: {
-          _id: req.user._id,
-          username: req.user.username,
-          role: req.user.role
-        }
+        user: {
+          _id: user._id,
+          username: user.username,
+          role: user.role
+        },
+        vendor: vendor ? {
+          _id: vendor._id,
+          name: vendor.name,
+          email: vendor.email
+        } : null
       }
     });
   } catch (err) {
