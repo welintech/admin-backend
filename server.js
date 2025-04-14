@@ -1,15 +1,12 @@
-require('dotenv').config(); // Load environment variables from .env file
+// Load environment variables from .env file
+require('dotenv').config();
+
 const express = require('express');
 const bodyParser = require('body-parser');
 const passport = require('passport');
 const mongoose = require('mongoose');
 const cors = require('cors'); // Add CORS package
 const morgan = require('morgan');
-
-// Routes
-const authRoutes = require('./routes/auth');
-const memberRoutes = require('./routes/member');
-const vendorRoutes = require('./routes/vendor');
 
 // Initialize the app
 const app = express();
@@ -25,9 +22,22 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
 }));
+
 // Middleware
 app.use(bodyParser.json());
 app.use(passport.initialize());
+
+// Passport config
+require('./config/passport')(passport);
+
+// Routes
+const authRoutes = require('./routes/auth');
+const memberRoutes = require('./routes/member');
+const vendorRoutes = require('./routes/vendor');
+
+app.use('/api/auth', authRoutes);
+app.use('/api/members', memberRoutes);
+app.use('/api/vendors', vendorRoutes);
 
 // MongoDB connection from environment variable
 const mongoURI = process.env.MONGO_URI;
@@ -48,11 +58,3 @@ mongoose.connect(mongoURI, {
     console.error('Error connecting to MongoDB:', err);
     process.exit(1);  // Exit the process if database connection fails
   });
-
-// Passport config
-require('./config/passport')(passport);
-
-// Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/members', memberRoutes);
-app.use('/api/vendors', vendorRoutes);

@@ -60,7 +60,8 @@ const checkAdminRole = (requiredRole) => {
             console.error('Auth middleware error:', error);
             res.status(401).json({
                 success: false,
-                message: 'Token is not valid'
+                message: 'Token is not valid',
+                error: error.message
             });
         }
     };
