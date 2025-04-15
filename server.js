@@ -15,12 +15,12 @@ app.use(morgan('dev'));
 // CORS configuration
 app.use(cors({
   origin: [
-    'http://localhost:5173', // Vite dev server
+    'https://welin.in',
+    'http://localhost:5174', // Vite dev server
     'http://localhost:3000', // React dev server
     'https://welin-dashboard-backend-493mx.ondigitalocean.app',
     'https://welin-dashboard-mehrn.ondigitalocean.app',
     'https://portal.welin.in',
-    'https://welin.in'
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
