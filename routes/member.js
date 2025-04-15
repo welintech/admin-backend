@@ -4,7 +4,7 @@ const Member = require('../models/Member');
 const passport = require('passport');
 
 // GET /api/members - Get list of members with pagination (for authenticated user)
-router.get('/', passport.authenticate('jwt', { session: false }), async (req, res) => {
+router.get('/',async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
@@ -81,6 +81,26 @@ router.post('/', passport.authenticate('jwt', { session: false }), async (req, r
         res.status(500).json({
             success: false,
             message: 'Error creating member',
+            error: error.message
+        });
+    }
+});
+
+// GET /api/members - Get all members (for authenticated users)
+router.get('/all',
+      async (req, res) => {
+    try {
+        const members = await Member.find(); // Fetch all members from the collection
+
+        res.status(200).json({
+            success: true,
+            data: members
+        });
+    } catch (error) {
+        console.error('Error fetching members:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching members',
             error: error.message
         });
     }
