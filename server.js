@@ -15,7 +15,8 @@ app.use(cors({
   origin: [
     'http://localhost:5173', // Vite dev server
     'http://localhost:3000', // React dev server
-    'https://welin-dashboard-backend-493mx.ondigitalocean.app', // Your production domain
+    'https://welin-dashboard-backend-493mx.ondigitalocean.app',
+    'https://welin-dashboard-mehrn.ondigitalocean.app/'
     // Add other allowed origins as needed
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
