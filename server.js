@@ -11,18 +11,25 @@ const morgan = require('morgan');
 // Initialize the app
 const app = express();
 app.use(morgan('dev'));
+
+// CORS configuration
 app.use(cors({
   origin: [
     'http://localhost:5173', // Vite dev server
     'http://localhost:3000', // React dev server
     'https://welin-dashboard-backend-493mx.ondigitalocean.app',
-    'https://welin-dashboard-mehrn.ondigitalocean.app/'
-    // Add other allowed origins as needed
+    'https://welin-dashboard-mehrn.ondigitalocean.app'
   ],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+  exposedHeaders: ['Content-Range', 'X-Content-Range'],
+  credentials: true,
+  preflightContinue: false,
+  optionsSuccessStatus: 204
 }));
+
+// Add OPTIONS handling for preflight requests
+app.options('*', cors());
 
 // Middleware
 app.use(bodyParser.json());
