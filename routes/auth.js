@@ -92,16 +92,27 @@ router.post('/login', async (req, res) => {
       });
     }
 
+    // Update last login time
+    user.lastLogin = new Date();
+    await user.save();
+
     // If user is vendor, get vendor profile
     let vendor = null;
     if (user.role === 'vendor') {
       vendor = await Vendor.findOne({ userId: user._id });
+      if (!vendor) {
+        return res.status(400).json({
+          success: false,
+          message: 'Vendor profile not found'
+        });
+      }
     }
 
     // Create JWT
     const payload = {
       id: user._id,
-      role: user.role
+      role: user.role,
+      vendorId: vendor ? vendor._id : null
     };
     
     const token = jwt.sign(
@@ -123,7 +134,9 @@ router.post('/login', async (req, res) => {
         vendor: vendor ? {
           _id: vendor._id,
           name: vendor.name,
-          email: vendor.email
+          email: vendor.email,
+          phone: vendor.phone,
+          address: vendor.address
         } : null
       }
     });

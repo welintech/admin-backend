@@ -56,7 +56,7 @@ router.get('/',async (req, res) => {
 });
 
 // POST /api/members - Create a new member (for authenticated user)
-router.post('/', passport.authenticate('jwt', { session: false }), async (req, res) => {
+router.post('/', async (req, res) => {
     try {
         const memberData = req.body;
         
@@ -65,8 +65,6 @@ router.post('/', passport.authenticate('jwt', { session: false }), async (req, r
         memberData.policyStartDate = new Date(memberData.policyStartDate);
         memberData.policyEndDate = new Date(memberData.policyEndDate);
 
-        // Add the user ID to the member data
-        memberData.user = req.user._id;
 
         const member = new Member(memberData);
         await member.save();

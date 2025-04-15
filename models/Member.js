@@ -2,8 +2,12 @@ const mongoose = require('mongoose');
 
 const memberSchema = new mongoose.Schema({
     vendorId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Vendor',
+       
+        type: String,
+        required: true
+    },
+    userId: {
+        type: String,
         required: true
     },
     memberNumber: {
