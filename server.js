@@ -22,6 +22,7 @@ app.use(cors({
     'http://localhost:5000', // React dev server
     'https://welin-dashboard-backend-493mx.ondigitalocean.app',
     'https://welin-admin-frontend-e53kl.ondigitalocean.app',
+    'https://admin-frontend-welin-bixa3.ondigitalocean.app',
     'https://welin-dashboard-mehrn.ondigitalocean.app',
     'https://portal.welin.in',
   ],
@@ -45,12 +46,11 @@ require('./config/passport')(passport);
 
 // Routes
 const authRoutes = require('./routes/auth');
-const memberRoutes = require('./routes/member');
-const vendorRoutes = require('./routes/vendor');
-
 app.use('/api/auth', authRoutes);
-app.use('/api/members', memberRoutes);
-app.use('/api/vendors', vendorRoutes);
+
+// Add admin routes
+const adminRoutes = require('./routes/admin');
+app.use('/api/admin', adminRoutes);
 
 // MongoDB connection from environment variable
 const mongoURI = process.env.MONGO_URI;

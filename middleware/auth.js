@@ -69,4 +69,14 @@ const checkAdminRole = (requiredRole) => {
 
 module.exports = {
     checkAdminRole
-}; 
+};
+
+module.exports.checkTokenExpiration = (err, req, res, next) => {
+  if (err.name === 'TokenExpiredError') {
+    return res.status(401).json({
+      success: false,
+      message: 'Token has expired. Please log in again.',
+    });
+  }
+  next(err);
+};

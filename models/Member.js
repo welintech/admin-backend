@@ -1,11 +1,6 @@
 const mongoose = require('mongoose');
 
 const memberSchema = new mongoose.Schema({
-    vendorId: {
-       
-        type: String,
-        required: true
-    },
     userId: {
         type: String,
         required: true
