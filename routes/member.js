@@ -4,7 +4,7 @@ const Member = require('../models/Member');
 const passport = require('passport');
 
 // GET /api/members - Get list of members with pagination (for authenticated user)
-router.get('/',async (req, res) => {
+router.get('/', passport.authenticate('jwt', { session: false }), async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
@@ -56,7 +56,7 @@ router.get('/',async (req, res) => {
 });
 
 // POST /api/members - Create a new member (for authenticated user)
-router.post('/', async (req, res) => {
+router.post('/', passport.authenticate('jwt', { session: false }), async (req, res) => {
     try {
         const memberData = req.body;
         

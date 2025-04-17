@@ -19,7 +19,9 @@ app.use(cors({
     'http://localhost:5174', // Vite dev server
     'http://localhost:5173', // Vite dev server
     'http://localhost:3000', // React dev server
+    'http://localhost:5000', // React dev server
     'https://welin-dashboard-backend-493mx.ondigitalocean.app',
+    'https://welin-admin-frontend-e53kl.ondigitalocean.app',
     'https://welin-dashboard-mehrn.ondigitalocean.app',
     'https://portal.welin.in',
   ],
