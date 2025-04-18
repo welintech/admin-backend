@@ -5,23 +5,25 @@ const router = express.Router();
 
 // User registration (admin or vendor)
 router.post('/register', async (req, res) => {
-  const { username, password, role } = req.body;
+  const { name, email, password, mobile, role } = req.body;
 
   try {
     // Check if user already exists
-    let user = await User.findOne({ username });
+    let user = await User.findOne({ email });
     if (user) {
       return res.status(400).json({
         success: false,
-        message: 'Username already exists'
+        message: 'Email already exists',
       });
     }
 
     // Create user
     user = new User({
-      username,
+      name,
+      email,
       password,
-      role
+      mobile,
+      role,
     });
 
     await user.save();
@@ -32,32 +34,33 @@ router.post('/register', async (req, res) => {
       data: {
         user: {
           _id: user._id,
-          username: user.username,
-          role: user.role
-        }
-      }
+          name: user.name,
+          email: user.email,
+          role: user.role,
+        },
+      },
     });
   } catch (err) {
     console.error('Registration error:', err);
     res.status(500).json({
       success: false,
       message: 'Error during registration',
-      error: err.message
+      error: err.message,
     });
   }
 });
 
-// User login (admin or vendor)
+// User login
 router.post('/login', async (req, res) => {
-  const { username, password } = req.body;
+  const { email, password } = req.body;
 
   try {
-    // Find user
-    let user = await User.findOne({ username });
+    // Find user by email
+    let user = await User.findOne({ email });
     if (!user) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid credentials'
+        message: 'Invalid credentials',
       });
     }
 
@@ -66,7 +69,7 @@ router.post('/login', async (req, res) => {
     if (!isMatch) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid credentials'
+        message: 'Invalid credentials',
       });
     }
 
@@ -78,14 +81,12 @@ router.post('/login', async (req, res) => {
     const payload = {
       id: user._id,
       role: user.role,
-      username: user.username
+      email: user.email,
     };
-    
-    const token = jwt.sign(
-      payload,
-      process.env.JWT_SECRET,
-      { expiresIn: '1h' }
-    );
+
+    const token = jwt.sign(payload, process.env.JWT_SECRET, {
+      expiresIn: '1h',
+    });
 
     res.json({
       success: true,
@@ -94,20 +95,21 @@ router.post('/login', async (req, res) => {
         token: `Bearer ${token}`,
         user: {
           _id: user._id,
-          username: user.username,
-          role: user.role
-        }
-      }
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          mobile: user.mobile,
+        },
+      },
     });
   } catch (err) {
     console.error('Login error:', err);
     res.status(500).json({
       success: false,
       message: 'Error during login',
-      error: err.message
+      error: err.message,
     });
   }
 });
-
 
 module.exports = router;
