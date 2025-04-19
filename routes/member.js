@@ -114,13 +114,20 @@ router.post('/', async (req, res) => {
     const member = new Member({
       ...memberData,
       welinId,
+      // Ensure password is included in the member data
+      password: memberData.password || 'password', // You might want to generate a random password if not provided
     });
+
     await member.save();
+
+    // Remove password from response
+    const memberResponse = member.toObject();
+    delete memberResponse.password;
 
     res.status(201).json({
       success: true,
       message: 'Member created successfully',
-      data: member,
+      data: memberResponse,
     });
   } catch (err) {
     console.error('Error creating member:', err);
@@ -188,10 +195,14 @@ router.put('/:id', async (req, res) => {
     Object.assign(member, updateData);
     await member.save();
 
+    // Remove password from response
+    const memberResponse = member.toObject();
+    delete memberResponse.password;
+
     res.json({
       success: true,
       message: 'Member updated successfully',
-      data: member,
+      data: memberResponse,
     });
   } catch (err) {
     console.error('Error updating member:', err);
