@@ -20,7 +20,7 @@ app.use(
       'http://localhost:5174',
       'http://localhost:5173',
       'http://localhost:3000',
-      'http://localhost:5000',
+      'http://localhost:8080',
       'https://welin-dashboard-backend-493mx.ondigitalocean.app',
       'https://welin-admin-frontend-e53kl.ondigitalocean.app',
       'https://admin-frontend-welin-bixa3.ondigitalocean.app',

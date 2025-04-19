@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 
 const memberSchema = new mongoose.Schema(
   {
@@ -37,6 +38,11 @@ const memberSchema = new mongoose.Schema(
         /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
         'Please enter a valid email',
       ],
+    },
+    password: {
+      type: String,
+      required: [true, 'Password is required'],
+      minlength: [6, 'Password must be at least 6 characters long'],
     },
     dob: {
       type: Date,
@@ -84,6 +90,10 @@ const memberSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    role: {
+      type: String,
+      default: 'user',
+    },
     isActive: {
       type: Boolean,
       default: true,
@@ -93,5 +103,21 @@ const memberSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
+// Hash password before saving
+memberSchema.pre('save', function (next) {
+  if (!this.isModified('password')) return next();
+
+  bcrypt.hash(this.password, 10, (err, hashedPassword) => {
+    if (err) return next(err);
+    this.password = hashedPassword;
+    next();
+  });
+});
+
+// Compare password method
+memberSchema.methods.comparePassword = function (password) {
+  return bcrypt.compareSync(password, this.password);
+};
 
 module.exports = mongoose.model('Member', memberSchema);

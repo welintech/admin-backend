@@ -1,6 +1,7 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const Member = require('../models/Member');
 const router = express.Router();
 
 // User registration (admin or vendor)
@@ -104,6 +105,66 @@ router.post('/login', async (req, res) => {
     });
   } catch (err) {
     console.error('Login error:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Error during login',
+      error: err.message,
+    });
+  }
+});
+
+// Member login
+router.post('/member/login', async (req, res) => {
+  const { email, password } = req.body;
+
+  try {
+    // Find member by email
+    let member = await Member.findOne({ email });
+    if (!member) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid credentials',
+      });
+    }
+
+    // Check password
+    const isMatch = await member.comparePassword(password);
+    if (!isMatch) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid credentials',
+      });
+    }
+
+    // Create JWT
+    const payload = {
+      id: member._id,
+      role: 'member',
+      email: member.email,
+      welinId: member.welinId,
+    };
+
+    const token = jwt.sign(payload, process.env.JWT_SECRET, {
+      expiresIn: '1h',
+    });
+
+    res.json({
+      success: true,
+      message: 'Logged in successfully',
+      data: {
+        token: `Bearer ${token}`,
+        user: {
+          _id: member._id,
+          welinId: member.welinId,
+          memberName: member.memberName,
+          email: member.email,
+          contactNo: member.contactNo,
+          role: member.role,
+        },
+      },
+    });
+  } catch (err) {
+    console.error('Member login error:', err);
     res.status(500).json({
       success: false,
       message: 'Error during login',
