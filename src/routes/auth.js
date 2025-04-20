@@ -2,20 +2,20 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const Member = require('../models/Member');
+const AppError = require('../utils/AppError');
+const catchAsync = require('../utils/catchAsync');
 const router = express.Router();
 
 // User registration (admin or vendor)
-router.post('/register', async (req, res) => {
-  const { name, email, password, mobile, role } = req.body;
+router.post(
+  '/register',
+  catchAsync(async (req, res) => {
+    const { name, email, password, mobile, role } = req.body;
 
-  try {
     // Check if user already exists
     let user = await User.findOne({ email });
     if (user) {
-      return res.status(400).json({
-        success: false,
-        message: 'Email already exists',
-      });
+      throw new AppError('Email already exists', 400);
     }
 
     // Create user
@@ -41,37 +41,25 @@ router.post('/register', async (req, res) => {
         },
       },
     });
-  } catch (err) {
-    console.error('Registration error:', err);
-    res.status(500).json({
-      success: false,
-      message: 'Error during registration',
-      error: err.message,
-    });
-  }
-});
+  })
+);
 
 // User login
-router.post('/login', async (req, res) => {
-  const { email, password } = req.body;
+router.post(
+  '/login',
+  catchAsync(async (req, res) => {
+    const { email, password } = req.body;
 
-  try {
     // Find user by email
     let user = await User.findOne({ email });
     if (!user) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid credentials',
-      });
+      throw new AppError('Invalid credentials', 400);
     }
 
     // Check password
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid credentials',
-      });
+      throw new AppError('Invalid credentials', 400);
     }
 
     // Update last login time
@@ -103,37 +91,25 @@ router.post('/login', async (req, res) => {
         },
       },
     });
-  } catch (err) {
-    console.error('Login error:', err);
-    res.status(500).json({
-      success: false,
-      message: 'Error during login',
-      error: err.message,
-    });
-  }
-});
+  })
+);
 
 // Member login
-router.post('/member/login', async (req, res) => {
-  const { email, password } = req.body;
+router.post(
+  '/member/login',
+  catchAsync(async (req, res) => {
+    const { email, password } = req.body;
 
-  try {
     // Find member by email
     let member = await Member.findOne({ email });
     if (!member) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid credentials',
-      });
+      throw new AppError('Invalid credentials', 400);
     }
 
     // Check password
     const isMatch = await member.comparePassword(password);
     if (!isMatch) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid credentials',
-      });
+      throw new AppError('Invalid credentials', 400);
     }
 
     // Create JWT
@@ -163,14 +139,7 @@ router.post('/member/login', async (req, res) => {
         },
       },
     });
-  } catch (err) {
-    console.error('Member login error:', err);
-    res.status(500).json({
-      success: false,
-      message: 'Error during login',
-      error: err.message,
-    });
-  }
-});
+  })
+);
 
 module.exports = router;

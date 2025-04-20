@@ -1,5 +1,7 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const AppError = require('../utils/AppError');
+const catchAsync = require('../utils/catchAsync');
 
 const UserSchema = new mongoose.Schema(
   {
@@ -51,32 +53,41 @@ const UserSchema = new mongoose.Schema(
 );
 
 // Drop old username index if it exists
-UserSchema.pre('init', async function () {
-  try {
-    await mongoose.connection.db.collection('users').dropIndex('username_1');
-  } catch (err) {
-    // Index might not exist, which is fine
-    if (err.code !== 27) {
-      // 27 is the error code for "index not found"
-      console.error('Error dropping old username index:', err);
+UserSchema.pre(
+  'init',
+  catchAsync(async function () {
+    try {
+      await mongoose.connection.db.collection('users').dropIndex('username_1');
+    } catch (err) {
+      // Only throw error if it's not an "index not found" error
+      if (err.code !== 27) {
+        throw new AppError(`Error dropping index: ${err.message}`, 500);
+      }
+      // Silently continue if index doesn't exist
     }
-  }
-});
+  })
+);
 
 // Hash password before saving
-UserSchema.pre('save', function (next) {
+UserSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
 
-  bcrypt.hash(this.password, 10, (err, hashedPassword) => {
-    if (err) return next(err);
+  try {
+    const hashedPassword = await bcrypt.hash(this.password, 10);
     this.password = hashedPassword;
     next();
-  });
+  } catch (err) {
+    throw new AppError('Error hashing password', 500);
+  }
 });
 
 // Compare password
 UserSchema.methods.comparePassword = function (password) {
-  return bcrypt.compareSync(password, this.password);
+  try {
+    return bcrypt.compareSync(password, this.password);
+  } catch (err) {
+    throw new AppError('Error comparing passwords', 500);
+  }
 };
 
 // Create the model
@@ -84,7 +95,7 @@ const User = mongoose.model('User', UserSchema);
 
 // Ensure indexes are created
 User.createIndexes().catch((err) => {
-  console.error('Error creating indexes:', err);
+  throw new AppError(`Error creating indexes: ${err.message}`, 500);
 });
 
 module.exports = User;

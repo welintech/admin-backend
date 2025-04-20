@@ -10,7 +10,26 @@ const morgan = require('morgan');
 
 // Initialize the app
 const app = express();
-app.use(morgan('dev'));
+
+// Custom token for morgan
+morgan.token('body', (req) => {
+  return JSON.stringify(req.body);
+});
+
+morgan.token('query', (req) => {
+  return JSON.stringify(req.query);
+});
+
+morgan.token('headers', (req) => {
+  return JSON.stringify(req.headers);
+});
+
+// Enhanced logging configuration
+app.use(
+  morgan(
+    ':method :url :status :response-time ms - :res[content-length] bytes\nHeaders: :headers\n'
+  )
+);
 
 // CORS configuration
 app.use(
@@ -50,7 +69,8 @@ app.use(bodyParser.json());
 app.use(passport.initialize());
 
 // Passport config
-require('./config/passport')(passport);
+const configurePassport = require('./config/passport');
+configurePassport(passport);
 
 // Routes
 const authRoutes = require('./routes/auth');
@@ -63,6 +83,10 @@ app.use('/api/admin', adminRoutes);
 // Add member routes
 const memberRoutes = require('./routes/member');
 app.use('/api/member', memberRoutes);
+
+// Global error handling middleware
+const errorHandler = require('./middleware/errorHandler');
+app.use(errorHandler);
 
 // MongoDB connection from environment variable
 const mongoURI = process.env.MONGO_URI;

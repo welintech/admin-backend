@@ -4,6 +4,8 @@ const User = require('../models/User');
 const WelinIdCounter = require('../models/WelinIdCounter');
 const { checkAdminRole } = require('../middleware/auth');
 const passport = require('passport');
+const AppError = require('../utils/AppError');
+const catchAsync = require('../utils/catchAsync');
 
 const router = express.Router();
 
@@ -11,8 +13,9 @@ const router = express.Router();
 router.use(passport.authenticate('jwt', { session: false }));
 
 // Get all members
-router.get('/', async (req, res) => {
-  try {
+router.get(
+  '/',
+  catchAsync(async (req, res) => {
     const members = await Member.find().populate(
       'vendorId',
       'name email mobile'
@@ -21,28 +24,19 @@ router.get('/', async (req, res) => {
       success: true,
       data: members,
     });
-  } catch (err) {
-    console.error('Error fetching members:', err);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching members',
-      error: err.message,
-    });
-  }
-});
+  })
+);
 
 // Get members by vendor ID
-router.get('/vendor/:vendorId', async (req, res) => {
-  try {
+router.get(
+  '/vendor/:vendorId',
+  catchAsync(async (req, res) => {
     const { vendorId } = req.params;
 
     // Validate vendor exists
     const vendor = await User.findById(vendorId);
     if (!vendor || vendor.role !== 'vendor') {
-      return res.status(404).json({
-        success: false,
-        message: 'Vendor not found',
-      });
+      throw new AppError('Vendor not found', 404);
     }
 
     const members = await Member.find({ vendorId }).populate(
@@ -53,19 +47,13 @@ router.get('/vendor/:vendorId', async (req, res) => {
       success: true,
       data: members,
     });
-  } catch (err) {
-    console.error('Error fetching vendor members:', err);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching vendor members',
-      error: err.message,
-    });
-  }
-});
+  })
+);
 
 // Get member by welin ID
-router.get('/welin/:welinId', async (req, res) => {
-  try {
+router.get(
+  '/welin/:welinId',
+  catchAsync(async (req, res) => {
     const { welinId } = req.params;
     const member = await Member.findOne({ welinId }).populate(
       'vendorId',
@@ -73,38 +61,26 @@ router.get('/welin/:welinId', async (req, res) => {
     );
 
     if (!member) {
-      return res.status(404).json({
-        success: false,
-        message: 'Member not found',
-      });
+      throw new AppError('Member not found', 404);
     }
 
     res.json({
       success: true,
       data: member,
     });
-  } catch (err) {
-    console.error('Error fetching member:', err);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching member',
-      error: err.message,
-    });
-  }
-});
+  })
+);
 
 // Create new member
-router.post('/', async (req, res) => {
-  try {
+router.post(
+  '/',
+  catchAsync(async (req, res) => {
     const memberData = req.body;
 
     // Validate vendor exists
     const vendor = await User.findById(memberData.vendorId);
     if (!vendor || vendor.role !== 'vendor') {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid vendor ID',
-      });
+      throw new AppError('Invalid vendor ID', 400);
     }
 
     // Generate Welin ID first
@@ -129,39 +105,20 @@ router.post('/', async (req, res) => {
       message: 'Member created successfully',
       data: memberResponse,
     });
-  } catch (err) {
-    console.error('Error creating member:', err);
-
-    // Handle validation errors
-    if (err.name === 'ValidationError') {
-      return res.status(400).json({
-        success: false,
-        message: 'Validation error',
-        errors: Object.values(err.errors).map((e) => e.message),
-      });
-    }
-
-    res.status(500).json({
-      success: false,
-      message: 'Error creating member',
-      error: err.message,
-    });
-  }
-});
+  })
+);
 
 // Update member
-router.put('/:id', async (req, res) => {
-  try {
+router.put(
+  '/:id',
+  catchAsync(async (req, res) => {
     const { id } = req.params;
     const updateData = req.body;
 
     // Validate member exists
     const member = await Member.findById(id);
     if (!member) {
-      return res.status(404).json({
-        success: false,
-        message: 'Member not found',
-      });
+      throw new AppError('Member not found', 404);
     }
 
     // If vendorId is being updated, validate new vendor
@@ -171,10 +128,7 @@ router.put('/:id', async (req, res) => {
     ) {
       const vendor = await User.findById(updateData.vendorId);
       if (!vendor || vendor.role !== 'vendor') {
-        return res.status(400).json({
-          success: false,
-          message: 'Invalid vendor ID',
-        });
+        throw new AppError('Invalid vendor ID', 400);
       }
     }
 
@@ -184,10 +138,7 @@ router.put('/:id', async (req, res) => {
         welinId: updateData.welinId,
       });
       if (existingMember) {
-        return res.status(400).json({
-          success: false,
-          message: 'Member with this Welin ID already exists',
-        });
+        throw new AppError('Member with this Welin ID already exists', 400);
       }
     }
 
@@ -204,38 +155,19 @@ router.put('/:id', async (req, res) => {
       message: 'Member updated successfully',
       data: memberResponse,
     });
-  } catch (err) {
-    console.error('Error updating member:', err);
-
-    // Handle validation errors
-    if (err.name === 'ValidationError') {
-      return res.status(400).json({
-        success: false,
-        message: 'Validation error',
-        errors: Object.values(err.errors).map((e) => e.message),
-      });
-    }
-
-    res.status(500).json({
-      success: false,
-      message: 'Error updating member',
-      error: err.message,
-    });
-  }
-});
+  })
+);
 
 // Delete member (hard delete)
-router.delete('/:id', async (req, res) => {
-  try {
+router.delete(
+  '/:id',
+  catchAsync(async (req, res) => {
     const { id } = req.params;
 
     // Validate member exists
     const member = await Member.findById(id);
     if (!member) {
-      return res.status(404).json({
-        success: false,
-        message: 'Member not found',
-      });
+      throw new AppError('Member not found', 404);
     }
 
     // Hard delete
@@ -245,14 +177,7 @@ router.delete('/:id', async (req, res) => {
       success: true,
       message: 'Member deleted successfully',
     });
-  } catch (err) {
-    console.error('Error deleting member:', err);
-    res.status(500).json({
-      success: false,
-      message: 'Error deleting member',
-      error: err.message,
-    });
-  }
-});
+  })
+);
 
 module.exports = router;
