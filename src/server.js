@@ -84,6 +84,14 @@ app.use('/api/admin', adminRoutes);
 const memberRoutes = require('./routes/member');
 app.use('/api/member', memberRoutes);
 
+// Add premium routes
+const premiumRoutes = require('./routes/premiumRoutes');
+app.use('/api/premium', premiumRoutes);
+
+// Add loan cover routes
+const loanCoverRoutes = require('./routes/loanCoverRoutes');
+app.use('/api/loan-cover', loanCoverRoutes);
+
 // Global error handling middleware
 const errorHandler = require('./middleware/errorHandler');
 app.use(errorHandler);
