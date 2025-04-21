@@ -92,9 +92,16 @@ app.use('/api/premium', premiumRoutes);
 const loanCoverRoutes = require('./routes/loanCoverRoutes');
 app.use('/api/loan-cover', loanCoverRoutes);
 
+// Add payment routes
+const paymentRoutes = require('./routes/paymentRoutes');
+app.use('/api/payments', paymentRoutes);
+
 // Global error handling middleware
 const errorHandler = require('./middleware/errorHandler');
 app.use(errorHandler);
+
+// Initialize cleanup job
+require('./jobs/cleanupPayments');
 
 // MongoDB connection from environment variable
 const mongoURI = process.env.MONGO_URI;
