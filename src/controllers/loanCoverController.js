@@ -1,4 +1,5 @@
 const LoanCover = require('../models/LoanCover');
+const Member = require('../models/Member');
 const AppError = require('../utils/AppError');
 const catchAsync = require('../utils/catchAsync');
 
@@ -6,7 +7,6 @@ const catchAsync = require('../utils/catchAsync');
 exports.createLoanCover = catchAsync(async (req, res, next) => {
   const {
     memberId,
-    vendorId,
     loanAmount,
     coverageStartDate,
     coverageEndDate,
@@ -35,13 +35,22 @@ exports.createLoanCover = catchAsync(async (req, res, next) => {
 
   const loanCover = await LoanCover.create({
     memberId,
-    vendorId,
     loanAmount,
     coverageStartDate,
     coverageEndDate,
     basePremium,
     gst,
     totalPremium,
+  });
+
+  await Member.findByIdAndUpdate(memberId, {
+    $push: {
+      products: {
+        type: 'loneCover',
+        productId: loanCover._id,
+        paymentStatus: false,
+      },
+    },
   });
 
   res.status(201).json({
@@ -76,42 +85,5 @@ exports.getMemberLoanCovers = catchAsync(async (req, res, next) => {
     status: 'success',
     results: loanCovers.length,
     data: loanCovers,
-  });
-});
-
-// Get all loan covers for a vendor
-exports.getVendorLoanCovers = catchAsync(async (req, res, next) => {
-  const loanCovers = await LoanCover.find({ vendorId: req.params.vendorId })
-    .populate('memberId', 'memberName contactNo email')
-    .populate('vendorId', 'name');
-
-  res.status(200).json({
-    status: 'success',
-    results: loanCovers.length,
-    data: loanCovers,
-  });
-});
-
-// Update payment details
-exports.updatePayment = catchAsync(async (req, res, next) => {
-  const { status, date, transactionId } = req.body;
-
-  const loanCover = await LoanCover.findById(req.params.id);
-
-  if (!loanCover) {
-    throw new AppError('Loan cover not found', 404);
-  }
-
-  loanCover.payment = {
-    status,
-    date,
-    transactionId,
-  };
-
-  await loanCover.save();
-
-  res.status(200).json({
-    status: 'success',
-    data: loanCover,
   });
 });

@@ -12,18 +12,5 @@ router.get('/:id', loanCoverController.getLoanCover);
 // Get all loan covers for a member
 router.get('/member/:memberId', loanCoverController.getMemberLoanCovers);
 
-// Get all loan covers for a vendor
-router.get(
-  '/vendor/:vendorId',
-  checkAdminRole('vendor'),
-  loanCoverController.getVendorLoanCovers
-);
-
-// Update payment details
-router.patch(
-  '/:id/payment',
-  checkAdminRole('vendor'),
-  loanCoverController.updatePayment
-);
 
 module.exports = router;

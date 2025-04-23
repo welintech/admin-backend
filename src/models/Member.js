@@ -86,10 +86,23 @@ const memberSchema = new mongoose.Schema(
         match: [/^[0-9]{10}$/, 'Please enter a valid 10-digit mobile number'],
       },
     },
-    loanFlag: {
-      type: Boolean,
-      default: false,
-    },
+    products: [
+      {
+        type: {
+          type: String,
+          enum: ['loneCover', 'healthCover'],
+          required: true,
+        },
+        productId: {
+          type: mongoose.Schema.Types.ObjectId,
+          required: true,
+        },
+        paymentStatus: {
+          type: Boolean,
+          default: false,
+        },
+      },
+    ],
     role: {
       type: String,
       default: 'user',

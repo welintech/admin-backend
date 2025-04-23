@@ -33,29 +33,16 @@ const paymentSchema = new mongoose.Schema({
     type: String,
     unique: true,
   },
-  description: {
-    type: String,
-  },
-  // QR Code specific fields
-  qrCode: {
-    data: String, // Base64 encoded QR code image
-    url: String, // Payment URL encoded in QR code
-    expiresAt: Date, // QR code expiration time
-  },
-  // Payment Link specific fields
-  paymentLink: {
-    url: String, // Payment link URL
-    expiresAt: Date, // Link expiration time
-    shortUrl: String, // Optional shortened URL
-  },
-  metadata: {
-    type: Map,
-    of: String,
-  },
-  user: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true,
+  product: {
+    type: {
+      type: String,
+      enum: ['loneCover', 'healthCover'],
+      required: true,
+    },
+    productId: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+    },
   },
   createdAt: {
     type: Date,
@@ -82,6 +69,28 @@ paymentSchema.pre('save', function (next) {
   } else {
     this.expiresAt = null; // Remove expiration for completed/failed payments
   }
+  next();
+});
+
+paymentSchema.pre(/^findOneAnd/, function (next) {
+  const update = this.getUpdate();
+
+  // Make sure you're updating the `updatedAt` field
+  if (!update.$set) {
+    update.$set = {};
+  }
+
+  update.$set.updatedAt = new Date();
+
+  // Check status (in update) and adjust expiresAt accordingly
+  const status = update.status || update.$set.status;
+
+  if (status === 'pending') {
+    update.$set.expiresAt = new Date(Date.now() + 5 * 60 * 1000); // TTL for pending
+  } else {
+    update.$set.expiresAt = null; // Prevent TTL deletion
+  }
+
   next();
 });
 

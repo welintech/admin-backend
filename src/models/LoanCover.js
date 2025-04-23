@@ -7,11 +7,6 @@ const loanCoverSchema = new mongoose.Schema(
       ref: 'Member',
       required: [true, 'Member ID is required'],
     },
-    vendorId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      required: [true, 'Vendor ID is required'],
-    },
     loanAmount: {
       type: Number,
       required: [true, 'Loan amount is required'],

@@ -3,6 +3,7 @@ const { validationResult } = require('express-validator');
 const QRCode = require('qrcode');
 const crypto = require('crypto');
 const catchAsync = require('../utils/catchAsync');
+const Member = require('../models/Member');
 
 // Generate a unique payment ID
 const generatePaymentId = () => {
@@ -23,18 +24,16 @@ exports.createPayment = catchAsync(async (req, res) => {
     return res.status(400).json({ errors: errors.array() });
   }
 
-  const { amount, currency, paymentMethod, description } = req.body;
+  const { amount, currency, paymentMethod, productId, type } = req.body;
   const paymentId = generatePaymentId();
 
   // If payment method is QR code, generate QR code
   if (paymentMethod === 'qr_code') {
     // For testing, use a simple text URL
-    const paymentUrl = `Payment ID: ${paymentId}\nAmount: ${amount} ${currency}\nDescription: ${
-      description || 'Payment'
-    }`;
+    const paymentUrl = `Payment ID: ${paymentId}\nAmount: ${amount} ${currency}\nDescription: ${'Payment'}`;
 
     try {
-      const qrCodeData = await QRCode.toDataURL(paymentUrl, {
+      const qrCode = await QRCode.toDataURL(paymentUrl, {
         errorCorrectionLevel: 'H',
         type: 'image/png',
         margin: 1,
@@ -47,23 +46,31 @@ exports.createPayment = catchAsync(async (req, res) => {
       const payment = new Payment({
         ...req.body,
         transactionId: paymentId,
+        product: {
+          type: type,
+          productId: productId,
+        },
+      });
+      const data = {
+        ...payment.toObject(),
         qrCode: {
-          data: qrCodeData,
+          data: qrCode,
           url: paymentUrl,
           expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours from now
         },
-        user: req.user._id,
-      });
-
+      };
       await payment.save();
-      return res.status(201).json(payment);
+      return res.status(201).json(data);
     } catch (error) {
       console.error('Error generating QR code:', error);
       // If QR code generation fails, still create the payment but without QR code
       const payment = new Payment({
         ...req.body,
         transactionId: paymentId,
-        user: req.user._id,
+        product: {
+          type: type,
+          productId: productId,
+        },
       });
       await payment.save();
       return res.status(201).json({
@@ -79,24 +86,25 @@ exports.createPayment = catchAsync(async (req, res) => {
     const payment = new Payment({
       ...req.body,
       transactionId: paymentId,
+    });
+
+    const data = {
+      ...payment.toObject(),
       paymentLink: {
         url: paymentUrl,
         shortUrl: paymentUrl, // In a real implementation, you might want to use a URL shortener service
         expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours from now
       },
-      user: req.user._id,
-    });
-    console.log(payment);
+    };
 
     await payment.save();
-    return res.status(201).json(payment);
+    return res.status(201).json(data);
   }
 
   // For other payment methods
   const payment = new Payment({
     ...req.body,
     transactionId: paymentId,
-    user: req.user._id,
   });
 
   await payment.save();
@@ -126,13 +134,37 @@ exports.getPaymentById = catchAsync(async (req, res) => {
 // @route   PUT /api/payments/:id
 // @access  Private
 exports.updatePayment = catchAsync(async (req, res) => {
-  const payment = await Payment.findByIdAndUpdate(req.params.id, req.body, {
-    new: true,
-    runValidators: true,
-  });
+  const { status, memberId } = req.body;
+
+  // Update payment status
+  const payment = await Payment.findByIdAndUpdate(
+    req.params.id,
+    { status },
+    {
+      new: true,
+      runValidators: true,
+    }
+  );
+
   if (!payment) {
     return res.status(404).json({ message: 'Payment not found' });
   }
+
+  // If payment is successful, update member's product payment status
+  if (status === 'completed' && memberId && payment.product?.productId) {
+    await Member.findOneAndUpdate(
+      {
+        _id: memberId,
+        'products.productId': payment.product.productId,
+      },
+      {
+        $set: {
+          'products.$.paymentStatus': true,
+        },
+      }
+    );
+  }
+
   res.json(payment);
 });
 
