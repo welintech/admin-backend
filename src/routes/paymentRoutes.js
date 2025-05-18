@@ -10,12 +10,15 @@ const paymentValidation = [
   check('currency', 'Currency is required').not().isEmpty(),
   check('paymentMethod', 'Payment method is required').not().isEmpty(),
   check('status', 'Status is required').not().isEmpty(),
+  // check('product.productId', 'Product ID is required').not().isEmpty(),
+  // check('product.type', 'Product type is required').not().isEmpty(),
 ];
 
 router.use(passport.authenticate('jwt', { session: false }));
 
 // Protected routes
-router.post('/', paymentValidation, paymentController.createPayment);
+router.post('/', paymentValidation, paymentController.createOrder);
+router.get('/order/:orderId', paymentController.getOrderDetails);
 router.get('/', paymentController.getPayments);
 router.get('/:id', paymentController.getPaymentById);
 router.put('/:id', paymentValidation, paymentController.updatePayment);

@@ -4,111 +4,109 @@ const QRCode = require('qrcode');
 const crypto = require('crypto');
 const catchAsync = require('../utils/catchAsync');
 const Member = require('../models/Member');
+const { Cashfree, CFEnvironment } = require('cashfree-pg');
 
 // Generate a unique payment ID
 const generatePaymentId = () => {
   return `PAY_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
 };
 
-// Generate a short URL (for demo purposes)
-const generateShortUrl = (paymentId) => {
-  return `https://welin.in/pay/${paymentId}`;
-};
-
-// @desc    Create a new payment
+// @desc    Create a new payment order
 // @route   POST /api/payments
 // @access  Private
-exports.createPayment = catchAsync(async (req, res) => {
+exports.createOrder = catchAsync(async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
   }
 
-  const { amount, currency, paymentMethod, productId, type } = req.body;
-  const paymentId = generatePaymentId();
+  const isProduction = process.env.NODE_ENV === 'production';
+  const env = isProduction ? CFEnvironment.PRODUCTION : CFEnvironment.SANDBOX;
+  const app_id = isProduction
+    ? process.env.CASHFREE_APP_ID
+    : process.env.CASHFREE_APP_ID_TEST;
+  const secret_key = process.env.CASHFREE_SECRET_KEY;
 
-  // If payment method is QR code, generate QR code
-  if (paymentMethod === 'qr_code') {
-    // For testing, use a simple text URL
-    const paymentUrl = `Payment ID: ${paymentId}\nAmount: ${amount} ${currency}\nDescription: ${'Payment'}`;
+  const cashfree = new Cashfree(env, app_id, secret_key);
 
-    try {
-      const qrCode = await QRCode.toDataURL(paymentUrl, {
-        errorCorrectionLevel: 'H',
-        type: 'image/png',
-        margin: 1,
-        color: {
-          dark: '#000000',
-          light: '#ffffff',
-        },
-      });
+  const { amount, currency, return_url, product } = req.body;
 
-      const payment = new Payment({
-        ...req.body,
-        transactionId: paymentId,
-        product: {
-          type: type,
-          productId: productId,
-        },
-      });
-      const data = {
-        ...payment.toObject(),
-        qrCode: {
-          data: qrCode,
-          url: paymentUrl,
-          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours from now
-        },
-      };
-      await payment.save();
-      return res.status(201).json(data);
-    } catch (error) {
-      console.error('Error generating QR code:', error);
-      // If QR code generation fails, still create the payment but without QR code
-      const payment = new Payment({
-        ...req.body,
-        transactionId: paymentId,
-        product: {
-          type: type,
-          productId: productId,
-        },
-      });
-      await payment.save();
-      return res.status(201).json({
-        ...payment.toObject(),
-        qrCodeError: 'Failed to generate QR code',
-      });
-    }
+  // Validate user object presence
+  if (!req.user) {
+    return res.status(401).json({ message: 'User not authenticated' });
   }
 
-  // If payment method is payment link
-  if (paymentMethod === 'payment_link') {
-    const paymentUrl = generateShortUrl(paymentId);
-    const payment = new Payment({
-      ...req.body,
-      transactionId: paymentId,
-    });
+  const order_id = generatePaymentId();
 
-    const data = {
-      ...payment.toObject(),
-      paymentLink: {
-        url: paymentUrl,
-        shortUrl: paymentUrl, // In a real implementation, you might want to use a URL shortener service
-        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours from now
-      },
-    };
+  const request = {
+    order_amount: amount,
+    order_currency: currency,
+    order_id,
+    customer_details: {
+      customer_id: req.user._id,
+      customer_phone: req.user.mobile,
+      customer_name: req.user.first_name,
+      customer_email: req.user.email,
+    },
+    order_meta: {
+      return_url: `${return_url}/${order_id}`,
+    },
+  };
 
-    await payment.save();
-    return res.status(201).json(data);
-  }
+  const order = await cashfree.PGCreateOrder(request);
 
-  // For other payment methods
-  const payment = new Payment({
-    ...req.body,
-    transactionId: paymentId,
+  // Create payment record in database
+  // const payment = await Payment.create({
+  //   orderId: order_id,
+  //   amount,
+  //   currency,
+  //   status: 'pending',
+  //   paymentMethod: 'cashfree',
+  //   user: req.user._id,
+  //   product: {
+  //     productId: product.productId,
+  //     type: product.type,
+  //   },
+  // });
+
+  return res.status(200).json({
+    message: 'Order created successfully',
+    data: {
+      ...order.data,
+      // paymentId: payment._id,
+    },
   });
+});
 
-  await payment.save();
-  res.status(201).json(payment);
+exports.getOrderDetails = catchAsync(async (req, res) => {
+  const { orderId } = req.params;
+
+  if (!orderId) {
+    return res.status(400).json({ message: 'Order ID is required' });
+  }
+
+  const isProduction = process.env.NODE_ENV === 'production';
+  const env = isProduction ? CFEnvironment.PRODUCTION : CFEnvironment.SANDBOX;
+  const app_id = isProduction
+    ? process.env.CASHFREE_APP_ID
+    : process.env.CASHFREE_APP_ID_TEST;
+  const secret_key = process.env.CASHFREE_SECRET_KEY;
+
+  const cashfree = new Cashfree(env, app_id, secret_key);
+
+  try {
+    const response = await cashfree.PGOrderFetchPayments(orderId);
+    res.status(200).json({
+      message: 'Payment details fetched successfully',
+      data: response.data[0],
+    });
+  } catch (error) {
+    console.error('Cashfree API Error:', error.response?.data || error.message);
+    res.status(500).json({
+      message: 'Failed to fetch payment details',
+      error: error.response?.data || error.message,
+    });
+  }
 });
 
 // @desc    Get all payments
