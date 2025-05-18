@@ -10,19 +10,6 @@ const paymentSchema = new mongoose.Schema({
     required: true,
     default: 'INR',
   },
-  paymentMethod: {
-    type: String,
-    required: true,
-    enum: [
-      'credit_card',
-      'debit_card',
-      'net_banking',
-      'upi',
-      'wallet',
-      'qr_code',
-      'payment_link',
-    ],
-  },
   status: {
     type: String,
     required: true,
