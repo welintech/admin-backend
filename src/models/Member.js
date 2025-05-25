@@ -97,10 +97,6 @@ const memberSchema = new mongoose.Schema(
           type: mongoose.Schema.Types.ObjectId,
           required: true,
         },
-        paymentStatus: {
-          type: Boolean,
-          default: false,
-        },
       },
     ],
     role: {
@@ -110,6 +106,11 @@ const memberSchema = new mongoose.Schema(
     isActive: {
       type: Boolean,
       default: true,
+    },
+    agent: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
     },
   },
   {

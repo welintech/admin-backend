@@ -32,11 +32,27 @@ const UserSchema = new mongoose.Schema(
       unique: true,
       match: [/^[0-9]{10}$/, 'Please enter a valid 10-digit mobile number'],
     },
+    vendorId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: function () {
+        return this.role?.role === 'agent';
+      },
+    },
     role: {
-      type: String,
-      enum: ['admin', 'vendor', 'user'],
-      required: [true, 'Role is required'],
-      default: 'user',
+      type: {
+        role: {
+          type: String,
+          enum: ['admin', 'vendor', 'user', 'agent'],
+          required: [true, 'Role is required'],
+        },
+        componentId: {
+          type: String,
+          required: [true, 'Component ID is required'],
+        },
+      },
+      required: [true, 'Role object is required'],
+      default: { role: 'user', componentId: 'default' },
     },
     isActive: {
       type: Boolean,

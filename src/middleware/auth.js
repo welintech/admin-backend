@@ -32,9 +32,10 @@ const checkAdminRole = (requiredRole) => {
       superadmin: ['superadmin', 'admin', 'vendor'],
       admin: ['admin', 'vendor'],
       vendor: ['vendor'],
+      agent: ['agent'],
     };
 
-    if (!roleHierarchy[user.role]?.includes(requiredRole)) {
+    if (!roleHierarchy[user.role.role]?.includes(requiredRole)) {
       throw new AppError('Insufficient permissions', 403);
     }
 

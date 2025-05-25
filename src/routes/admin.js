@@ -43,7 +43,7 @@ router.post(
       email,
       password,
       mobile,
-      role: role || 'user', // Default to 'user' if role not specified
+      role: role || { role: 'user', componentId: 'default' }, // Default to user role if not specified
     });
 
     await user.save();
@@ -64,7 +64,9 @@ router.post(
 router.get(
   '/users',
   catchAsync(async (req, res) => {
-    const users = await User.find();
+    const users = await User.find({
+      'role.role': { $nin: ['agent', 'admin'] },
+    });
     res.json({
       success: true,
       data: users,
@@ -72,11 +74,11 @@ router.get(
   })
 );
 
-// Get all users with role 'vendor'
+// Get all vendors
 router.get(
-  '/vendors',
+  '/vendor',
   catchAsync(async (req, res) => {
-    const vendors = await User.find({ role: 'vendor' });
+    const vendors = await User.find({ 'role.role': 'vendor' });
     res.json({
       success: true,
       data: vendors,
@@ -103,7 +105,7 @@ router.get(
   catchAsync(async (req, res) => {
     const [activeUsers, activeVendors, activeMembers] = await Promise.all([
       User.countDocuments({ isActive: true }),
-      User.countDocuments({ role: 'vendor', isActive: true }),
+      User.countDocuments({ 'role.role': 'vendor', isActive: true }),
       Member.countDocuments({ isActive: true }),
     ]);
 

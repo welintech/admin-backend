@@ -29,6 +29,6 @@ router.post(
 );
 
 // Get premium amount for given loan amount and year
-router.get('/premium', premiumController.getPremium);
+router.get('/', premiumController.getPremium);
 
 module.exports = router;

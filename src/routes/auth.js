@@ -24,14 +24,14 @@ router.post(
       email,
       password,
       mobile,
-      role,
+      role: role || { role: 'user', componentId: 'default' },
     });
 
     await user.save();
 
     res.status(201).json({
       success: true,
-      message: `${role} registered successfully`,
+      message: `${role.role} registered successfully`,
       data: {
         user: {
           _id: user._id,

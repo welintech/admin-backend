@@ -77,6 +77,10 @@ app.use('/api/auth', authRoutes);
 const adminRoutes = require('./routes/admin');
 app.use('/api/admin', adminRoutes);
 
+// Add agent routes
+const agentRoutes = require('./routes/agent');
+app.use('/api/agent', agentRoutes);
+
 // Add member routes
 const memberRoutes = require('./routes/member');
 app.use('/api/member', memberRoutes);
