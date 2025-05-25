@@ -5,6 +5,8 @@ const Member = require('../models/Member');
 const AppError = require('../utils/AppError');
 const catchAsync = require('../utils/catchAsync');
 const router = express.Router();
+const { check } = require('express-validator');
+const passport = require('passport');
 
 // User registration (admin or vendor)
 router.post(
@@ -138,6 +140,57 @@ router.post(
           role: member.role,
         },
       },
+    });
+  })
+);
+
+// Add passport authentication middleware
+router.use(passport.authenticate('jwt', { session: false }));
+
+// Change password validation
+const changePasswordValidation = [
+  check('currentPassword', 'Current password is required').not().isEmpty(),
+  check('newPassword', 'New password is required').not().isEmpty(),
+  check('newPassword', 'Password must be at least 6 characters long').isLength({
+    min: 6,
+  }),
+];
+
+// Change password route
+router.post(
+  '/change-password',
+  changePasswordValidation,
+  catchAsync(async (req, res) => {
+    const { currentPassword, newPassword } = req.body;
+    const userId = req.user._id;
+    const userRole = req.user.role.role;
+
+    let user;
+
+    // Find user based on role
+    if (userRole === 'user') {
+      user = await Member.findById(userId);
+    } else {
+      user = await User.findById(userId);
+    }
+
+    if (!user) {
+      throw new AppError('User not found', 404);
+    }
+
+    // Verify current password
+    const isPasswordValid = await user.comparePassword(currentPassword);
+    if (!isPasswordValid) {
+      throw new AppError('Current password is incorrect', 401);
+    }
+
+    // Update password
+    user.password = newPassword;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Password changed successfully',
     });
   })
 );

@@ -18,10 +18,10 @@ router.use(passport.authenticate('jwt', { session: false }));
 router.post(
   '/user',
   catchAsync(async (req, res) => {
-    const { name, email, password, mobile, role } = req.body;
+    const { name, email, mobile, role } = req.body;
 
     // Validate required fields
-    if (!name || !email || !password || !mobile) {
+    if (!name || !email || !mobile) {
       throw new AppError('All fields are required', 400);
     }
 
@@ -41,7 +41,7 @@ router.post(
     const user = new User({
       name,
       email,
-      password,
+      password: 'password',
       mobile,
       role: role || { role: 'user', componentId: 'default' }, // Default to user role if not specified
     });
