@@ -13,6 +13,7 @@ exports.createLoanCover = catchAsync(async (req, res, next) => {
     basePremium,
     gst,
     totalPremium,
+    loanType,
   } = req.body;
 
   // Basic validation
@@ -36,6 +37,7 @@ exports.createLoanCover = catchAsync(async (req, res, next) => {
   const loanCover = await LoanCover.create({
     memberId,
     loanAmount,
+    loanType,
     coverageStartDate,
     coverageEndDate,
     basePremium,

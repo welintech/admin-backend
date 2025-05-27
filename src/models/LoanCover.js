@@ -12,6 +12,10 @@ const loanCoverSchema = new mongoose.Schema(
       required: [true, 'Loan amount is required'],
       min: [0, 'Loan amount cannot be negative'],
     },
+    loanType: {
+      type: String,
+      required: [true, 'loanType is required'],
+    },
     coverageStartDate: {
       type: Date,
       required: [true, 'Coverage start date is required'],

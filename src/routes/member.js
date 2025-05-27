@@ -110,6 +110,7 @@ const createLoanCover = async (memberId, loanData) => {
     basePremium: loanData.basePremium,
     gst: loanData.gst,
     totalPremium: loanData.totalPremium,
+    loanType: loanData.loanType,
     payment: {
       status: 'pending',
     },
